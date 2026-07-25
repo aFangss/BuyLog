@@ -65,6 +65,16 @@ scripts/     run-ios-simulator.sh 等辅助脚本
 
 也可在 Xcode 中打开 `iosApp/iosApp.xcodeproj` 运行。
 
+## CI
+
+PR 合入 `master` 前会由 GitHub Actions 验证编译（`.github/workflows/pr-build.yml`）。先按修改路径判断受影响的平台，只跑必要的检查：
+
+- 改动 `shared/`、`composeApp/` 或 Gradle 配置 → 三端全部验证
+- 只改动某端入口目录（`androidApp/` / `webApp/` / `iosApp/`)→ 只验证该端
+- 对应检查：Android `:androidApp:assembleDebug`、Web `:webApp:jsBrowserDistribution`、iOS `:composeApp:linkDebugFrameworkIosSimulatorArm64`(macOS runner)
+
+另外 Gradle 构建缓存已开启（`setup-gradle`),job 内部也会做增量编译，只重编受影响的模块。
+
 ## 注意事项
 
 - 好单库 API 的 `appId` / `appSecret` 目前硬编码在 `shared` 的各平台 `ApiClient` 中，仅供开发使用，发布前请移到安全配置中。
