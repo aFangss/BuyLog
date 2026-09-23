@@ -2,6 +2,7 @@ package com.buylog.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.buylog.data.db.AppDatabase
@@ -74,6 +75,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun parseUrl(url: String) {
         if (url.isBlank()) return
+
         viewModelScope.launch {
             fetchProductInfo(url)
         }
@@ -81,6 +83,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun closeProductCard() {
         _showProductCard.value = false
+    }
+
+    fun saveProduct(product: Product) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                productDao.insertProduct(product)
+                withContext(Dispatchers.Main) {
+                    closeProductCard()
+                }
+            } catch (e : Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     private fun generateSign(params: Map<String, String>, secret: String): String {
@@ -122,7 +137,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 client.newCall(request).execute().use { response ->
                     val result = response.body?.string()
                     val jsonRes = JSONObject(result ?: "")
-                    if (jsonRes.optInt("code") == 200) {
+                    val code = jsonRes.optInt("code")
+
+                    if (code == 200) {
                         val data = jsonRes.getJSONObject("data")
                         
                         val product = Product(
@@ -137,13 +154,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         // 更新 UI 状态
                         _parsedProduct.value = product
                         _showProductCard.value = true
+                    } else {
+                        Log.e(
+                            TAG,
+                            "接口返回失败，httpCode=${response.code}, code=$code, message=${jsonRes.optString("msg")}"
+                        )
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "商品解析异常：${e.message}", e)
             } finally {
                 _isParsing.value = false
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "HomeViewModel"
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.buylog.ClipboardLinkHandler
+import com.buylog.data.model.Product
 import com.buylog.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,15 +181,10 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             ) {
                 parsedProduct?.let { product ->
                     ProductEditSection(
-                        initialTitle = product.title,
-                        initialPrice = product.price,
-                        platform = product.platform,
-                        mainImageUrl = product.imageUrl,
-                        carouselImages = if (product.images.isNotBlank()) product.images.split(",") else emptyList(),
+                        product = product,
                         onCancel = { viewModel.closeProductCard() },
-                        onSave = { 
-                            // 处理保存逻辑
-                            viewModel.closeProductCard()
+                        onSave = { editedProduct ->
+                            viewModel.saveProduct(editedProduct)
                         }
                     )
                 }
@@ -226,24 +222,41 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
 
 @Composable
 fun ProductEditSection(
-    initialTitle: String,
-    initialPrice: String,
-    platform: String,
-    mainImageUrl: String,
-    carouselImages: List<String>,
+    product: Product,
     onCancel: () -> Unit,
-    onSave: () -> Unit
+    onSave: (Product) -> Unit
 ) {
-    var title by remember { mutableStateOf(initialTitle) }
-    var price by remember { mutableStateOf(initialPrice) }
-    var selectedCategory by remember { mutableStateOf("") }
-    var size by remember { mutableStateOf("") }
-    
-    // 图片单选逻辑
-    val allImages = remember { listOf(mainImageUrl) + carouselImages }
-    var selectedImageUrl by remember { mutableStateOf(mainImageUrl) }
+    var title by remember(product) {
+        mutableStateOf(product.title)
+    }
+
+    var price by remember(product) {
+        mutableStateOf(product.price)
+    }
+
+    var selectedCategory by remember(product) {
+        mutableStateOf(product.category)
+    }
+
+    var size by remember(product) {
+        mutableStateOf(product.size)
+    }
+
+    val allImages = remember(product) {
+        listOf(product.imageUrl) +
+                if (product.images.isNotBlank()) {
+                    product.images.split(",")
+                } else {
+                    emptyList()
+                }
+    }
+
+    var selectedImageUrl by remember(product) {
+        mutableStateOf(product.imageUrl)
+    }
 
     val categories = listOf("上衣", "裤子", "鞋子", "配饰", "数码", "其他")
+
     val needsSize = selectedCategory in listOf("上衣", "裤子", "鞋子")
 
     Card(
@@ -313,7 +326,7 @@ fun ProductEditSection(
                     shape = RoundedCornerShape(16.dp)
                 )
                 OutlinedTextField(
-                    value = platform,
+                    value = product.platform,
                     onValueChange = {},
                     label = { Text("来源") },
                     modifier = Modifier.weight(0.7f),
@@ -369,7 +382,16 @@ fun ProductEditSection(
                     Text("取消", style = MaterialTheme.typography.titleMedium)
                 }
                 Button(
-                    onClick = onSave, 
+                    onClick = {
+                        val editedProduct = product.copy(
+                            title = title,
+                            price = price,
+                            imageUrl = selectedImageUrl,
+                            category = selectedCategory,
+                            size = size
+                        )
+                        onSave(editedProduct)
+                    },
                     modifier = Modifier.height(56.dp).weight(1f),
                     shape = RoundedCornerShape(16.dp)
                 ) {

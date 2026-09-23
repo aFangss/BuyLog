@@ -39,6 +39,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import com.buylog.data.db.BuyLogDatabaseHelper
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +50,9 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
             }
         }
+        val databaseHelper = BuyLogDatabaseHelper(this)
+        val database = databaseHelper.writableDatabase
+        database.close()
     }
 }
 

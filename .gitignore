@@ -18,3 +18,4 @@ Thumbs.db        # Windows 系统
 *.jks
 *.keystore
 keystore.properties
+.kotlin/
